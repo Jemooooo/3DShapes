@@ -6,6 +6,7 @@ public class LineGenerator : MonoBehaviour
 {
     public Material material;
     public Vector3 cubeCenter;
+    public Vector3 cubeOtherCenter;
     public Vector3 cubeRotation;
     public float cubeSideLength;
     public float focalLength;
@@ -26,7 +27,7 @@ public class LineGenerator : MonoBehaviour
         if (material == null)
         {
             Debug.LogError("You need to add a material");
-            return; 
+            return;
         }
         GL.PushMatrix();
 
@@ -34,18 +35,39 @@ public class LineGenerator : MonoBehaviour
         material.SetPass(0);
 
 
-        var squareVectors = GetFrontSquare();
+        var squareOne = GetFrontSquare(cubeCenter);
+        var squareTwo = GetFrontSquare(cubeOtherCenter);
 
-
-        var frontScale = focalLength / ((cubeCenter.z - cubeSideLength * .5f) + focalLength);
-
+        var squareOneScale = focalLength / ((cubeCenter.z - cubeSideLength * .5f) + focalLength);
+        var squareTwoScale = focalLength / ((cubeOtherCenter.z - cubeSideLength * .5f) + focalLength);
+        /*
         for (int i = 0; i < squareVectors.Length; i++ )
         {
             
             var deductedVector = cubeCenter - squareVectors[i];
             var rotatedVectors =  RotateBy(cubeRotation.z, deductedVector.x, deductedVector.y);
-            squareVectors[i] = rotatedVectors;
+            squareVectors[i] = rotatedVectors;  
         }
+        */
+        
+
+        
+        
+        if(CheckCollision(squareTwo, squareOne))
+        {
+            Debug.Log("Collision Detected");
+        }
+
+        DrawSquare(squareOne, squareOneScale);
+        DrawSquare(squareTwo, squareTwoScale);
+
+        GL.PopMatrix();
+        GL.End();
+
+    }
+
+    private void DrawSquare(Vector3[] squareVectors, float frontScale)
+    {
         for (int i = 0; i < squareVectors.Length; i++)
         {
 
@@ -56,10 +78,6 @@ public class LineGenerator : MonoBehaviour
             GL.Vertex3(point2.x, point2.y, 0);
 
         }
-
-        GL.PopMatrix();
-        GL.End();
-
     }
 
     public Vector2 RotateBy(float angle, float axis1, float axis2)
@@ -69,15 +87,39 @@ public class LineGenerator : MonoBehaviour
         return new Vector2(firstAxis, secondAxis);
     }
 
-    public Vector3[] GetFrontSquare()
+    public Vector3[] GetFrontSquare(Vector2 boxCenter)
     {
         var halfLength = cubeSideLength * .5f;
 
         return new[] {
-            new Vector3(cubeCenter.x + halfLength, cubeCenter.y + halfLength, -halfLength),
-            new Vector3(cubeCenter.x - halfLength, cubeCenter.y + halfLength, -halfLength),
-            new Vector3(cubeCenter.x - halfLength, cubeCenter.y - halfLength, -halfLength),
-            new Vector3(cubeCenter.x + halfLength, cubeCenter.y - halfLength, -halfLength),
+            new Vector3(boxCenter.x + halfLength, boxCenter.y + halfLength, -halfLength),
+            new Vector3(boxCenter.x - halfLength, boxCenter.y + halfLength, -halfLength),
+            new Vector3(boxCenter.x - halfLength, boxCenter.y - halfLength, -halfLength),
+            new Vector3(boxCenter.x + halfLength, boxCenter.y - halfLength, -halfLength),
         };
+    }
+
+    public bool CheckCollision(Vector3[] box1, Vector3[] box2)
+    {
+        /*
+        var xMin = box1[1].x > box2[0].x;
+        var xMax = box1[0].x < box2[1].x;
+        var yMin = box1[1].y > box2[2].y;
+        var yMax = box1[2].y < box2[1].y;
+        */
+
+        var xMin = box1[0].x >= box2[1].x;
+        var xMax = box1[1].x <= box2[0].x;
+        var yMin = box1[2].y <= box2[1].y;
+        var yMax = box1[1].y >= box2[2].y;
+
+        Debug.Log($"{xMin} {xMax} {yMin} {yMax}");
+
+        if (xMin && xMax && yMin && yMax)
+        {
+            return true;
+        }
+
+        return false;
     }
 }
