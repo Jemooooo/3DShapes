@@ -5,7 +5,7 @@ public class SphereGenerator : MonoBehaviour
     public Material sphereMaterial;
 
     public Vector3 sphereCenter;
-    public Vector3 sphereRotation;
+    public Vector3 sphereRotation; // Rotation in degrees
     public float radius = 1f;
     public int segments = 20;
     public float focalLength = 10f;
@@ -24,37 +24,35 @@ public class SphereGenerator : MonoBehaviour
         GL.Begin(GL.LINES);
         sphereMaterial.SetPass(0);
 
-        // Draw front and back circles
-        Vector3[] frontCircle = GetCircleVertices(0);
-        Vector3[] backCircle = GetCircleVertices(depthOffset);
+        // Create rotation
+        Quaternion rotation = Quaternion.Euler(sphereRotation);
 
-        RotateVertices(ref frontCircle);
-        RotateVertices(ref backCircle);
+        // Get rotated front and back circles
+        Vector3[] frontCircle = GetCircleVertices(0, rotation);
+        Vector3[] backCircle = GetCircleVertices(depthOffset, rotation);
 
         float frontScale = focalLength / (sphereCenter.z + focalLength);
         float backScale = focalLength / ((sphereCenter.z + depthOffset) + focalLength);
 
-        // Draw front face
+        // Draw circles
         DrawCircle(frontCircle, frontScale);
-
-        // Draw back face
         DrawCircle(backCircle, backScale);
 
-        // Connect front and back circle vertices
+        // Connect front and back
         for (int i = 0; i < frontCircle.Length; i++)
         {
-            Vector3 frontPoint = frontCircle[i] * frontScale;
-            Vector3 backPoint = backCircle[i] * backScale;
+            Vector3 p1 = frontCircle[i] * frontScale;
+            Vector3 p2 = backCircle[i] * backScale;
 
-            GL.Vertex3(frontPoint.x, frontPoint.y, 0);
-            GL.Vertex3(backPoint.x, backPoint.y, 0);
+            GL.Vertex3(p1.x, p1.y, 0);
+            GL.Vertex3(p2.x, p2.y, 0);
         }
 
         GL.End();
         GL.PopMatrix();
     }
 
-    private Vector3[] GetCircleVertices(float zOffset)
+    private Vector3[] GetCircleVertices(float zOffset, Quaternion rotation)
     {
         Vector3[] vertices = new Vector3[segments];
         for (int i = 0; i < segments; i++)
@@ -62,26 +60,11 @@ public class SphereGenerator : MonoBehaviour
             float angle = i * Mathf.PI * 2 / segments;
             float x = Mathf.Cos(angle) * radius;
             float y = Mathf.Sin(angle) * radius;
-            vertices[i] = sphereCenter + new Vector3(x, y, zOffset);
+
+            // Apply rotation and offset from center
+            vertices[i] = rotation * new Vector3(x, y, zOffset) + sphereCenter;
         }
         return vertices;
-    }
-
-    private void RotateVertices(ref Vector3[] vertices)
-    {
-        for (int i = 0; i < vertices.Length; i++)
-        {
-            Vector3 offset = sphereCenter - vertices[i];
-            Vector2 rotated = RotateBy(sphereRotation.z, offset.x, offset.y);
-            vertices[i] = new Vector3(rotated.x, rotated.y, vertices[i].z) + sphereCenter;
-        }
-    }
-
-    private Vector2 RotateBy(float angle, float axis1, float axis2)
-    {
-        var firstAxis = axis1 * Mathf.Cos(angle) - axis2 * Mathf.Sin(angle);
-        var secondAxis = axis2 * Mathf.Cos(angle) + axis1 * Mathf.Sin(angle);
-        return new Vector2(firstAxis, secondAxis);
     }
 
     private void DrawCircle(Vector3[] vertices, float scale)

@@ -5,32 +5,13 @@ public class RectangleGenerator : MonoBehaviour
     public Material rectangleMaterial;
 
     public Vector3 rectangleCenter;
-    public Vector3 rectangleRotation;
+    public Vector3 rectangleRotation; // Rotation in degrees (Euler angles)
     public float width = 2f;
     public float height = 1f;
-    public float depthOffset = 2f; // Distance between front and back face
+    public float depthOffset = 2f;
     public float focalLength = 10f;
 
     private void OnPostRender()
-    {
-        DrawRectangle();
-    }
-
-    private Vector3[] GetRectangleVertices(float zOffset)
-    {
-        float halfWidth = width * 0.5f;
-        float halfHeight = height * 0.5f;
-
-        return new[]
-        {
-            rectangleCenter + new Vector3(-halfWidth, -halfHeight, zOffset),
-            rectangleCenter + new Vector3(halfWidth, -halfHeight, zOffset),
-            rectangleCenter + new Vector3(halfWidth, halfHeight, zOffset),
-            rectangleCenter + new Vector3(-halfWidth, halfHeight, zOffset)
-        };
-    }
-
-    private void DrawRectangle()
     {
         if (rectangleMaterial == null) return;
 
@@ -38,11 +19,14 @@ public class RectangleGenerator : MonoBehaviour
         GL.Begin(GL.LINES);
         rectangleMaterial.SetPass(0);
 
-        // Front and back vertices
-        Vector3[] frontFace = GetRectangleVertices(0);
-        Vector3[] backFace = GetRectangleVertices(depthOffset);
+        // Create rotation matrix
+        Quaternion rotation = Quaternion.Euler(rectangleRotation);
 
-        // Apply perspective scaling
+        // Get front and back face vertices
+        Vector3[] frontFace = GetRectangleVertices(0, rotation);
+        Vector3[] backFace = GetRectangleVertices(depthOffset, rotation);
+
+        // Perspective scale
         float frontScale = focalLength / (rectangleCenter.z + focalLength);
         float backScale = focalLength / ((rectangleCenter.z + depthOffset) + focalLength);
 
@@ -50,18 +34,39 @@ public class RectangleGenerator : MonoBehaviour
         DrawFace(frontFace, frontScale);
         DrawFace(backFace, backScale);
 
-        // Connect front and back vertices (edges)
+        // Connect corners between front and back
         for (int i = 0; i < frontFace.Length; i++)
         {
-            Vector3 frontPoint = frontFace[i] * frontScale;
-            Vector3 backPoint = backFace[i] * backScale;
+            Vector3 p1 = frontFace[i] * frontScale;
+            Vector3 p2 = backFace[i] * backScale;
 
-            GL.Vertex3(frontPoint.x, frontPoint.y, 0);
-            GL.Vertex3(backPoint.x, backPoint.y, 0);
+            GL.Vertex3(p1.x, p1.y, 0);
+            GL.Vertex3(p2.x, p2.y, 0);
         }
 
         GL.End();
         GL.PopMatrix();
+    }
+
+    private Vector3[] GetRectangleVertices(float zOffset, Quaternion rotation)
+    {
+        float halfWidth = width * 0.5f;
+        float halfHeight = height * 0.5f;
+
+        Vector3[] vertices = new Vector3[]
+        {
+            new Vector3(-halfWidth, -halfHeight, zOffset),
+            new Vector3(halfWidth, -halfHeight, zOffset),
+            new Vector3(halfWidth, halfHeight, zOffset),
+            new Vector3(-halfWidth, halfHeight, zOffset)
+        };
+
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            vertices[i] = rotation * vertices[i] + rectangleCenter;
+        }
+
+        return vertices;
     }
 
     private void DrawFace(Vector3[] vertices, float scale)

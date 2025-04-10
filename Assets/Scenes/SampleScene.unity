@@ -234,7 +234,7 @@ MonoBehaviour:
   baseSize: 1
   height: 1
   focalLength: 10
-  depthOffset: 7
+  depthOffset: 0
 --- !u!114 &519420035
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -253,7 +253,7 @@ MonoBehaviour:
   radius: 1
   height: 2
   focalLength: 1.7
-  depthOffset: 0.7
+  depthOffset: 0
   segments: 10
 --- !u!114 &519420036
 MonoBehaviour:
@@ -270,7 +270,7 @@ MonoBehaviour:
   rectangleMaterial: {fileID: 2100000, guid: bf1bd287f3cadf94a9b8a49b5bd8b100, type: 2}
   rectangleCenter: {x: 0, y: 0, z: 0}
   rectangleRotation: {x: 0, y: 0, z: 0}
-  width: 3
+  width: 2
   height: 1
   depthOffset: 2
   focalLength: 10

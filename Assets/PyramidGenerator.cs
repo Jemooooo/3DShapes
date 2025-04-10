@@ -16,13 +16,6 @@ public class PyramidGenerator : MonoBehaviour
         DrawPyramid();
     }
 
-    private Vector2 RotateBy(float angle, float axis1, float axis2)
-    {
-        var firstAxis = axis1 * Mathf.Cos(angle) - axis2 * Mathf.Sin(angle);
-        var secondAxis = axis2 * Mathf.Cos(angle) + axis1 * Mathf.Sin(angle);
-        return new Vector2(firstAxis, secondAxis);
-    }
-
     private Vector3[] GetBaseVertices(float zOffset)
     {
         float halfSize = baseSize * 0.5f;
@@ -49,30 +42,30 @@ public class PyramidGenerator : MonoBehaviour
         GL.Begin(GL.LINES);
         pyramidMaterial.SetPass(0);
 
-        // Front and back vertices
+        // Get unrotated front and back vertices
         Vector3[] frontBase = GetBaseVertices(0);
         Vector3[] backBase = GetBaseVertices(depthOffset);
-
         Vector3 frontApex = GetApex(0);
         Vector3 backApex = GetApex(depthOffset);
 
-        // Apply rotation to front and back base
+        // Apply rotation
         RotateVertices(ref frontBase);
         RotateVertices(ref backBase);
+        frontApex = RotatePoint(frontApex);
+        backApex = RotatePoint(backApex);
 
         // Perspective scaling
         float frontScale = focalLength / (pyramidCenter.z + focalLength);
         float backScale = focalLength / ((pyramidCenter.z + depthOffset) + focalLength);
 
-        // Draw front face
+        // Draw front and back faces
         DrawBase(frontBase, frontScale);
         DrawEdges(frontBase, frontApex, frontScale);
 
-        // Draw back face
         DrawBase(backBase, backScale);
         DrawEdges(backBase, backApex, backScale);
 
-        // Connect front and back vertices
+        // Connect base edges front to back
         for (int i = 0; i < frontBase.Length; i++)
         {
             Vector3 frontPoint = frontBase[i] * frontScale;
@@ -82,7 +75,7 @@ public class PyramidGenerator : MonoBehaviour
             GL.Vertex3(backPoint.x, backPoint.y, 0);
         }
 
-        // Connect front apex to back apex
+        // Connect apex front to back
         Vector3 scaledFrontApex = frontApex * frontScale;
         Vector3 scaledBackApex = backApex * backScale;
 
@@ -95,12 +88,19 @@ public class PyramidGenerator : MonoBehaviour
 
     private void RotateVertices(ref Vector3[] vertices)
     {
+        Quaternion rotation = Quaternion.Euler(pyramidRotation);
         for (int i = 0; i < vertices.Length; i++)
         {
-            Vector3 offset = pyramidCenter - vertices[i];
-            Vector2 rotated = RotateBy(pyramidRotation.z, offset.x, offset.y);
-            vertices[i] = new Vector3(rotated.x, rotated.y, vertices[i].z) + pyramidCenter;
+            Vector3 localPos = vertices[i] - pyramidCenter;
+            vertices[i] = rotation * localPos + pyramidCenter;
         }
+    }
+
+    private Vector3 RotatePoint(Vector3 point)
+    {
+        Quaternion rotation = Quaternion.Euler(pyramidRotation);
+        Vector3 localPos = point - pyramidCenter;
+        return rotation * localPos + pyramidCenter;
     }
 
     private void DrawBase(Vector3[] baseVertices, float scale)
